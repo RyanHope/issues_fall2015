@@ -2,7 +2,7 @@
 title       : Cognitive control of eye movements
 subtitle    : A model of voluntary and involuntary saccade generation
 author      : Ryan M. Hope
-job         : CogWorks Lab, Rensselaer Polytechnic Institute
+job         : Rensselaer Polytechnic Institute
 biglogo     : rpi_logo.png
 logo        : cogworks_logo.png
 framework   : io2012
@@ -11,53 +11,526 @@ hitheme     : tomorrow
 widgets     : [mathjax]
 mode        : selfcontained
 knit        : slidify::knit2slides
-github      : 
-              author  : ryanhope
-              repo    : issues_fall2015
+
+---
+
+```{r echo=FALSE,include=FALSE}
+require(stringr)
+require(pander)
+require(png)
+require(grid)
+require(RColorBrewer)
+require(ggplot2)
+require(data.table)
+all_summary = fread("summary_20151005131110.dat",header=T)
+all_summary[,correct:=ifelse(saccade.response.target.correct,
+                             paste(mode,"correct",sep="-"),
+                             paste(mode,"incorrect",sep="-"))]
+all_summary_clean = all_summary[average.quality==1 & !is.na(first.saccade.latency)]
+r=fread("results1.txt",header=T)
+r=data.table(melt(r,id.vars=1:10,measure.vars=11:28,value.name="ks.stat",variable.name="sid"))
+rr=melt(r,id.vars=c("sid","ks.stat"))
+r=r[,.SD[min(ks.stat)==ks.stat][1],by=sid]
+r[,sid:=str_sub(sid,4)]
+```
+
+## Voluntary vs. involuntary eye movements
+
++ Humans make on average 1-4 saccades every second
+    - thats 10s to 100s of thousands of saccades per day
+    - how many are deliberately planned?
     
----
-
-## Voluntary vs involuntary control
-
-Everything that involves mo
-
----
-
-## Goals
-
-High level
-
-+ Gain better understanding of cognitive control
-    - Proactive vs Reactive
-    - Voluntary vs Involuntary
-    - Automatic vs Deliberate
-
-Low level
-
-+ Develop a model of oculomotor control
-    - Understand how temporary voluntary control of automatic processes takes place
++ Humans feel like they can VOLUNTARILY move their eyes:
+    - to any location
+    - at any time
+    
++ Certain circumstances absolutely produce INVOLUNTARILY saccades:
+    - e.g. the sudden onset of a visual stimulus
 
 ---
 
-## Why model eye movements?
+## Evidence supporting automatic saccade timing
 
-+ Humans make around 2-4 eye movements every second
-    - Thats about 80,000 to 160,000 eye movements a day, more than any other motor based activity
-+ Although it appears that humans can initiate a saccade to a target at will, most saccades are automatic or involuntary
-+ Eye movements only have 2 degrees of freedom (left/right, up/down)
-    - Probably the simplest motor activity to model
++ corrective eye movements (aka glissades)
+    - short intersaccadic intervals
+    - no intersaccadic interval
+    - overlapping saccades
+
++ fixational eye movements (aka microsaccades)
+    - reduce image fading from photoreceptor fatigue
+    - possibly related to shifts of attention
+    - follows main-sequence
+
++ smooth pursuit
+    - lots of small regularlly spaced unconscious saccades
+
+--- .segue .dark .quote
+
+<center><ss>How does the sense of voluntary control emerge from an oculomotor control system based on automatic saccade timing?</ss></center>
 
 ---
 
-## What are involuntary eye movements?
+## CRISP DEVS (Discrete Event System Specification)
 
-+ Eye movements 
+```{r fig.width=14,fig.height=6,echo=FALSE}
+grid.raster(readPNG("assets/img/CRISP_DEVS.png"))
+```
+
+https://github.com/RyanHope/PyeMovements/blob/master/crisp.py
+
+https://simpy.readthedocs.org/en/latest
 
 ---
 
-## The role of attention in eye movements
+## CRISP control mechanisms
 
-+ There is lots of evidence to suggest that covert shifts of attention always preceede voluntary eye movements
-+ It is less clear whether or not this is also true for involuntary eye movements
-    - Some think the sudden onset of visual stimuli captures attention 100% of the time
-    - More recent evidence suggests a less strict coupling
+```{r fig.width=14,fig.height=7,echo=FALSE}
+grid.raster(readPNG("assets/img/crisp_plot.png"))
+```
+
+--- .segue .dark .quote
+
+## The Experiment
+
+--- &twocol
+
+## Mixed-block antisaccade task
+
+*** =left 
+
++ 480 trials split by 12 blocks
+    - 20 anti / 20 pro per block
++ Initially `r length(all_summary[,unique(sid)])` subjects
+    - Dropped 1 Sx, latencies were 1/2 that of all other Sxs
+    - Dropped 4 Sxs, learned to do the task without eye movements
+    - Dropped all trials with blinks
+
+```{r echo=FALSE, fig.width=6, fig.height=2}
+ggplot(all_summary_clean[!sid %in% c("e35da","06fbf","b4a6f","b608f","d17cc"),.N,by=sid]) + geom_dotplot(aes(x=N),binwidth=10) + scale_y_continuous(breaks=NULL) + ylab("") + xlab(sprintf("Trial counts the remaining %d subjects",length(all_summary_clean[!sid %in% c("e35da","06fbf","b4a6f","b608f","d17cc"),unique(sid)])))
+```
+
+*** =right
+
+```{r fig.width=5,fig.height=6,echo=FALSE}
+grid.raster(readPNG("assets/img/astask.png"))
+```
+
+---
+
+## Eye movement parameters in the antisaccade task
+
+```{r fig.width=14,fig.height=7,echo=FALSE}
+grid.raster(readPNG("assets/img/antisaccade.png"))
+```
+
+--- .segue .dark .quote
+
+## Experimental Results
+
+---
+
+## Task performance
+
+```{r fig.width=14,fig.height=7,echo=FALSE}
+ggplot(melt(all_summary_clean[!sid %in% c("e35da","06fbf","b4a6f","b608f","d17cc"),list(key.response=mean(key.response.correct),saccade.response=mean(saccade.response.target.correct)),by=c("sid","block","mode")],id.vars=1:3)[,variable2:=paste(mode,variable,sep=".")][,]) + geom_line(aes(x=block,y=value,group=variable2,color=variable2),size=1.25) + 
+  facet_wrap(mode~sid,ncol=6) +
+  theme(legend.position="bottom") +
+  scale_x_continuous(breaks=1:12) +
+  scale_colour_brewer(palette="Paired") +
+  xlab("Block") +
+  ylab("Response accuracy")
+```
+
+---
+
+## First saccade latency
+
+```{r fig.width=14,fig.height=7,echo=FALSE}
+ggplot(all_summary_clean[!sid %in% c("e35da","06fbf","b4a6f","b608f","d17cc")]) + 
+  geom_line(aes(x=first.saccade.latency,color=correct),stat="density",size=1.25) + 
+  scale_color_manual(values=brewer.pal(name="Paired",6)[c(5,1,6,2)]) + 
+  facet_wrap(~sid,ncol=6) + 
+  theme(legend.position="bottom") + 
+  coord_cartesian(xlim=c(0,1)) +
+  xlab("Latency (in seconds) of first saccade post cue appearance") +
+  ylab("Count")
+```
+
+---
+
+## First saccade latency (subsetted)
+
+```{r fig.width=14,fig.height=7,echo=FALSE}
+ggplot(all_summary_clean[!sid %in% c("e35da","06fbf","b4a6f","b608f","d17cc") & (correct=="pro-correct" | correct=="anti-incorrect")]) +
+  geom_line(aes(x=first.saccade.latency,color=correct),stat="density",size=1.25) + 
+  scale_color_manual(values=brewer.pal(name="Paired",6)[c(1,6)]) + 
+  facet_wrap(~sid,ncol=6) + 
+  theme(legend.position="bottom") + 
+  scale_x_continuous(breaks=seq(0,1,.25)) + 
+  coord_cartesian(xlim=c(0,1)) +
+  xlab("Latency (in seconds) of first saccade post cue appearance") +
+  ylab("Count")
+```
+
+---
+
+## First saccade amplitude
+
+```{r fig.width=14,fig.height=7,echo=FALSE}
+ggplot(all_summary_clean[!sid %in% c("e35da","06fbf","b4a6f","b608f","d17cc")]) +
+  geom_point(aes(y=first.saccade.latency,x=first.saccade.amplitude.ratio,color=correct)) + 
+  scale_color_manual(values=brewer.pal(name="Paired",6)[c(5,1,6,2)]) + facet_wrap(~correct,ncol=1) +
+  ylab("Latency (in seconds) of first saccade post cue appearance") +
+  xlab("Relative amplitude of first saccade post cue appearance")
+```
+
+--- .segue .dark .quote
+
+## The Models
+
+--- &twocol
+
+## Model variants / task interaction
+
+*** =left
+
+Model 1: baseline
++ possible cancellation at gap
++ rate change at gap
++ possible cancellation at cue
++ rate change at cue
++ getTarget() always returns Inf
+
+*** =right
+
+Model 2: bottom-up
++ rate change at gap
++ rate change at cue
++ getTarget() queries environment module
+
+Model 3: top-down
++ rate change at gap
++ attention shift at gap
++ rate change at cue
++ attention shift at cue
++ getTarget() queries attention module
+
+---
+
+## Model variant conceptual differences
+
++ <b>For the non-spatial (baseline) model, fixating is achieved via saccade cancellation.</b>
+
++ <b>For the spatial models, fixating is achieved via making a saccade of zero amplitude.</b>
+
+--- &twocol
+
+## Model: baseline | Timer rate
+
+*** =left
+
+```{r, echo=FALSE}
+data.timer = read.delim("sim_timer.dat",header=T)
+ggplot(data.timer) + 
+  geom_line(aes(x=latency,group=timer_mean,color=timer_mean),stat="density",size=1.25) +
+  scale_color_continuous("Mean Timer (s)") + 
+  theme_bw() +
+  theme(legend.position = c(0.8, 0.8)) +
+  xlab("Latency (in seconds) of first saccade post cue appearance") +
+  ylab("Density") +
+  coord_cartesian(xlim=c(0,1))
+```
+
+*** =right
+
+- The timer value seems to interact with the labile stage duration
+ - When timer interval << labile duration, kurtosis <0, labile duration dominates mode
+ - When timer interval ~= labile duration, kurtosis >0
+ - When timer interval >> labile duration, kurtosis <0, timer interval dominates mode
+
+---
+
+## Model: baseline | Labile programming duration
+
+```{r, echo=FALSE}
+data.labile = read.delim("sim_labile.dat",header=T)
+ggplot(data.labile) + 
+  geom_line(aes(x=latency,group=labile_mean,color=labile_mean),stat="density",size=1.25) +
+  scale_color_continuous("Mean Labile (s)") + 
+  theme_bw() +
+  theme(legend.position = c(0.8, 0.8)) +
+  xlab("Latency (in seconds) of first saccade post cue appearance") +
+  ylab("Density") +
+  coord_cartesian(xlim=c(0,1))
+```
+
+---
+
+## Model: baseline | Gap cancellation
+ 
+```{r, echo=FALSE}
+data.gap = read.delim("sim_gap.dat",header=T)
+ggplot(data.gap) + 
+  geom_line(aes(x=latency,group=gap_cancel_prob,color=gap_cancel_prob),stat="density",size=1.25) +
+  scale_color_continuous("Gap Cancellation Probability") + 
+  theme_bw() +
+  theme(legend.position = c(0.8, 0.8)) +
+  xlab("Latency (in seconds) of first saccade post cue appearance") +
+  ylab("Density") +
+  coord_cartesian(xlim=c(0,1))
+```
+
+---
+ 
+## Model: baseline | Cue cancellation
+ 
+```{r, echo=FALSE}
+data.cue = read.delim("sim_cue.dat",header=T)
+ggplot(data.cue) + 
+  geom_line(aes(x=latency,group=cue_cancel_prob,color=cue_cancel_prob),stat="density",size=1.25) +
+  scale_color_continuous("Cue Cancellation Probability") + 
+  theme_bw() +
+  theme(legend.position = c(0.8, 0.8)) +
+  xlab("Latency (in seconds) of first saccade post cue appearance") +
+  ylab("Density") +
+  coord_cartesian(xlim=c(0,1))
+```
+
+---
+
+## MindModeling@Home (Beta)
+
+MindModeling@Home is volunteer computing pool dedicated to the advancement of cognitive science.
+
++ Based in Dayton, OH at:
+    - The University of Dayton Research Institute
+    - Wright State University
++ https://mindmodeling.org/
++ **Can run a years worth of simulations in the matter of a few hours to a few days!**
+
+Powered by:
+
+```{r fig.width=3,fig.height=1.6,echo=FALSE}
+grid.raster(readPNG("assets/img/boinc_600.png"))
+```
+
+---
+
+## Parameter space
+
+<table>
+				<tbody><tr class="tableHead">
+					<th>#</th>
+					<th>Name</th>
+					<th>Start</th>
+					<th>Step</th>
+					<th>Stop</th>
+					<th>Count</th>
+				</tr>
+				<tr>
+						<td>1.</td>
+						<td>timer_states</td>
+						<td>20</td>
+						<td>40</td>
+						<td>180</td>
+						<td>5</td>
+					</tr><tr>
+						<td>2.</td>
+						<td>timer_mean</td>
+						<td>0.200</td>
+						<td>0.025</td>
+						<td>0.300</td> 
+						<td>5					</td> 
+					</tr><tr>
+						<td>3.</td>
+						<td>labile_mean</td>
+						<td>0.120</td>
+						<td>0.02</td>
+						<td>0.180</td> 
+						<td>4					</td> 
+					</tr><tr>
+						<td>4.</td>
+						<td>labile_stdev</td>
+						<td>8</td>
+						<td>4</td>
+						<td>16</td> 
+						<td>3					</td> 
+					</tr><tr>
+						<td>5.</td>
+						<td>attn_mean</td>
+						<td>0.100</td>
+						<td>0.025</td>
+						<td>0.250</td> 
+						<td>7					</td> 
+					</tr><tr>
+						<td>6.</td>
+						<td>attn_stdev</td>
+						<td>8</td>
+						<td>4</td>
+						<td>16</td> 
+						<td>3					</td> 
+					</tr><tr>
+						<td>7.</td>
+						<td>gap_cancel_prob</td>
+						<td>0</td>
+						<td>0</td>
+						<td>0</td>
+						<td>1</td>
+					</tr><tr>
+						<td>8.</td>
+						<td>gap_timer_rate</td>
+						<td>0.25</td>
+						<td>0.25</td>
+						<td>1.75</td> 
+						<td>7					</td> 
+					</tr><tr>
+						<td>9.</td>
+						<td>cue_cancel_prob</td>
+						<td>0</td>
+						<td>0</td>
+						<td>0</td>
+						<td>1</td>
+					</tr><tr>
+						<td>10.</td>
+						<td>cue_timer_rate</td>
+						<td>0.25</td>
+						<td>0.25</td>
+						<td>1.75</td> 
+						<td>7					</td> 
+					</tr><tr>
+						<td>11.</td>
+						<td>alpha</td>
+						<td>0</td>
+						<td>1</td>
+						<td>1</td>
+						<td>2</td>
+									</tr>
+			</tbody></table>
+
+---
+
+## Parameter space evaluation
+
+"model run" = 500 trials
+
+KS test = Kolmogorov–Smirnov test
+
++ One model run per parameter combination was dispatched out to volunteer computers
++ For each model run:
+    - the resulting latency distribution (from the model) was compared to each of the 18 subjects data using a two-sample KS test
+    - the two-sample KS test scores from each subject (as well as the evaluated parameter values) were returned to the MindModeling servers
+
++ For the following plots "best fitting" models were selected by picking the model with the lowest KS score
+
+--- .segue .dark .quote
+
+## MindModeling Result / Model Fits
+
+---
+
+## Trial Type: prosaccade | Model: bottom-up 
+
+```{r fig.width=14,fig.height=7,echo=FALSE,warning=FALSE}
+lat = fread("fits_pro-correct_bottom-up.dat",header=T)
+labs = lat[,{s=ks.test(.SD[type=="data",first.saccade.latency],.SD[type=="model",first.saccade.latency]);list(ks.stat=round(s$statistic,3),p.value=round(s$p.value,3))},by=sid]
+ggplot(lat) + geom_line(aes(x=first.saccade.latency,group=type,color=type,linetype=type),stat="density",size=1.25) +
+  facet_wrap(~sid,ncol=6) +
+  xlab("Latency (in seconds) of first saccade post cue appearance") +
+  ylab("Count") +
+  geom_text(aes(label=sprintf("ks=%.3f",ks.stat),x=.75,y=25),data=labs,size=4) +
+  geom_text(aes(label=sprintf("p=%.3f",p.value),x=.75,y=21),data=labs,size=4) +
+  theme(legend.position="bottom") +
+  scale_linetype_manual(values=c("solid","twodash")) +
+  coord_cartesian(xlim=c(0,1))
+```
+
+---
+
+## Trial Type: prosaccade | Model: top-down
+
+```{r fig.width=14,fig.height=7,echo=FALSE,warning=FALSE}
+lat = fread("fits_pro-correct_top-down.dat",header=T)
+labs = lat[,{s=ks.test(.SD[type=="data",first.saccade.latency],.SD[type=="model",first.saccade.latency]);list(ks.stat=round(s$statistic,3),p.value=round(s$p.value,3))},by=sid]
+ggplot(lat) + geom_line(aes(x=first.saccade.latency,group=type,color=type,linetype=type),stat="density",size=1.25) +
+  facet_wrap(~sid,ncol=6) +
+  xlab("Latency (in seconds) of first saccade post cue appearance") +
+  ylab("Count") +
+  geom_text(aes(label=sprintf("ks=%.3f",ks.stat),x=.75,y=25),data=labs,size=4) +
+  geom_text(aes(label=sprintf("p=%.3f",p.value),x=.75,y=21),data=labs,size=4) +
+  theme(legend.position="bottom") +
+  scale_linetype_manual(values=c("solid","twodash")) +
+  coord_cartesian(xlim=c(0,1))
+```
+
+---
+
+## Trial Type: antisaccade | Model: bottom-up
+
+```{r fig.width=14,fig.height=7,echo=FALSE,warning=FALSE}
+lat = fread("fits_anti-correct_bottom-up.dat",header=T)
+labs = lat[,{s=ks.test(.SD[type=="data",first.saccade.latency],.SD[type=="model",first.saccade.latency]);list(ks.stat=round(s$statistic,3),p.value=round(s$p.value,3))},by=sid]
+ggplot(lat) + geom_line(aes(x=first.saccade.latency,group=type,color=type,linetype=type),stat="density",size=1.25) +
+  facet_wrap(~sid,ncol=6) +
+  xlab("Latency (in seconds) of first saccade post cue appearance") +
+  ylab("Count") +
+  geom_text(aes(label=sprintf("ks=%.3f",ks.stat),x=.75,y=23),data=labs,size=4) +
+  geom_text(aes(label=sprintf("p=%.3f",p.value),x=.75,y=19),data=labs,size=4) +
+  theme(legend.position="bottom") +
+  scale_linetype_manual(values=c("solid","twodash")) +
+  coord_cartesian(xlim=c(0,1))
+```
+
+---
+
+## Trial Type: antisaccade | Model: top-down
+
+```{r fig.width=14,fig.height=7,echo=FALSE,warning=FALSE}
+lat = fread("fits_anti-correct_top-down.dat",header=T)
+labs = lat[,{s=ks.test(.SD[type=="data",first.saccade.latency],.SD[type=="model",first.saccade.latency]);list(ks.stat=round(s$statistic,3),p.value=round(s$p.value,3))},by=sid]
+ggplot(lat) + geom_line(aes(x=first.saccade.latency,group=type,color=type,linetype=type),stat="density",size=1.25) +
+  facet_wrap(~sid,ncol=6) +
+  xlab("Latency (in seconds) of first saccade post cue appearance") +
+  ylab("Count") +
+  geom_text(aes(label=sprintf("ks=%.3f",ks.stat),x=.75,y=23),data=labs,size=4) +
+  geom_text(aes(label=sprintf("p=%.3f",p.value),x=.75,y=19),data=labs,size=4) +
+  theme(legend.position="bottom") +
+  scale_linetype_manual(values=c("solid","twodash")) +
+  coord_cartesian(xlim=c(0,1))
+```
+
+--- .segue .dark .quote
+
+## Summary
+
+---
+
+## Preliminary results and conclusions
+
+Results
++ The baseline model fits:
+    - nothing
++ The bottom-up model fits:
+    - pro-correct trials very well
+    - anti-incorrect trials very well
+    - anti-correct trials very well
++ The top-down model fits:
+    - anti-correct trials
+
+Conclusion
++ Modeling results so far support the idea that voluntary control can emerge from an oculomotor control system based on automatic saccade timing
++ Saccade cancelation is not needed to "keep the eyes from moving" (i.e. maintain fixation)
+
+---
+
+## Limitations and continuing work
+
+* A large space of parameters generate latency distributions that are statistically indistinquishable from human data
+    - Need to understand what this means, if any parameters are not needed
+    - Need to determine if any values can be fixed for all subjects
+* Need to get model performing task as mixed block instead of single blocks
+    - Need to see what if any parameters work for both anti and pro trials
+* Need to improve model evaluation on volunteers
+    - Need to perform more than one model run and get estimate of KS stat variance
+
+* Haven't attempted to model saccade amplitude yet
+* Haven't attempted to model the latency of saccades beyond the first saccade
