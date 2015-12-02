@@ -356,8 +356,7 @@ KS test = Kolmogorov–Smirnov test
 ## Preliminary results and conclusions
 
 Results
-+ The baseline model fits:
-    - nothing
++ The baseline model fits nothing
 + The bottom-up model fits:
     - pro-correct trials very well
     - anti-incorrect trials very well
@@ -365,7 +364,7 @@ Results
 + The top-down model fits:
     - anti-correct trials
 
-Conclusion
+Conclusions
 + Modeling results so far support the idea that voluntary control can emerge from an oculomotor control system based on automatic saccade timing
 + Saccade cancelation is not needed to "keep the eyes from moving" (i.e. maintain fixation)
 
@@ -384,4 +383,8 @@ Conclusion
 * Haven't attempted to model saccade amplitude yet
 * Haven't attempted to model the latency of saccades beyond the first saccade
 
+--- .segue .dark .quote
 
+## Any questions?
+
+### Thank you for your time!
