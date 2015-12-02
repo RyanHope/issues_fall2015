@@ -44,7 +44,7 @@ knit        : slidify::knit2slides
     - follows main-sequence
 
 + smooth pursuit
-    - lots of small regularlly spaced unconscious saccades
+    - lots of small regularly spaced unconscious saccades
 
 --- .segue .dark .quote
 
@@ -205,7 +205,7 @@ MindModeling@Home is volunteer computing pool dedicated to the advancement of co
     - The University of Dayton Research Institute
     - Wright State University
 + https://mindmodeling.org/
-+ **Can run a years worth of simulations in the matter of a few hours to a few days!**
++ **Can run a year's worth of simulations in the matter of a few hours to a few days!**
 
 Powered by:
 
@@ -373,7 +373,7 @@ Conclusion
 
 ## Limitations and continuing work
 
-* A large space of parameters generate latency distributions that are statistically indistinquishable from human data
+* A large space of parameters generate latency distributions that are statistically indistinguishable from human data
     - Need to understand what this means, if any parameters are not needed
     - Need to determine if any values can be fixed for all subjects
 * Need to get model performing task as mixed block instead of single blocks
@@ -383,3 +383,5 @@ Conclusion
 
 * Haven't attempted to model saccade amplitude yet
 * Haven't attempted to model the latency of saccades beyond the first saccade
+
+
